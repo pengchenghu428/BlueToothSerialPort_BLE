@@ -27,16 +27,20 @@ import com.inuker.bluetooth.library.BluetoothClient;
 import com.inuker.bluetooth.library.connect.listener.BleConnectStatusListener;
 import com.inuker.bluetooth.library.connect.options.BleConnectOptions;
 import com.inuker.bluetooth.library.connect.response.BleConnectResponse;
+import com.inuker.bluetooth.library.connect.response.BleNotifyResponse;
 import com.inuker.bluetooth.library.connect.response.BleReadResponse;
+import com.inuker.bluetooth.library.connect.response.BleUnnotifyResponse;
 import com.inuker.bluetooth.library.connect.response.BleWriteResponse;
 import com.inuker.bluetooth.library.model.BleGattProfile;
 import com.inuker.bluetooth.library.model.BleGattService;
 import com.inuker.bluetooth.library.receiver.listener.BluetoothBondListener;
 import com.pengchenghu.bluetoothserialport.R;
 import com.pengchenghu.bluetoothserialport.conffiguration.StaticConfiguration;
+import com.pengchenghu.bluetoothserialport.tools.HexAndByte;
 
 import java.io.UnsupportedEncodingException;
 import java.util.List;
+import java.util.UUID;
 
 import static com.inuker.bluetooth.library.Code.REQUEST_DENIED;
 import static com.inuker.bluetooth.library.Code.REQUEST_SUCCESS;
@@ -125,8 +129,15 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                 mOverflowMenu.show(); // 打开下拉菜单
                 break;
             case R.id.button_data_collect:  // 数据采集开始/结束消息监听
+                if(mDataCollectBtn.getText().toString().equals(R.string.data_collect_start)){
+                    setupChatNotify();  // 打开notify，采集数据
+                }else if(mDataCollectBtn.getText().toString().equals(R.string.data_collect_end)){
+                    closeChatNotify();  // 关闭notify，停止采集数据
+                }
                 break;
             case R.id.button_window_clear:  // 清空窗口消息监听
+                mConversationArrayAdapter.clear();
+                mConversationArrayAdapter.notifyDataSetChanged();
                 break;
             case R.id.button_data_save:     // 数据保存消息监听
                 break;
@@ -197,13 +208,14 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
     @Override
     public void onPause() {
         super.onPause();
+
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        mBluetoothClient.unregisterConnectStatusListener(bluetoothMAC, mBleConnectStatusListener);
         mBluetoothClient.disconnect(bluetoothMAC);
+        mBluetoothClient.unregisterConnectStatusListener(bluetoothMAC, mBleConnectStatusListener);
     }
 
     @Override
@@ -267,12 +279,46 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
         mWindowClearBtn.setEnabled(true);
         mDataSaveBtn.setEnabled(true);
     }
+    private void setupChatNotify(){
+        mBluetoothClient.notify(bluetoothMAC, bluetoothService.getUUID(),
+                bluetoothService.getCharacters().get(0).getUuid(), new BleNotifyResponse() {
+                    @Override
+                    public void onNotify(UUID service, UUID character, byte[] value) {
+                        //硬件回复的数据在这里,统一处理
+                        String response = HexAndByte.bytesToHex(value);
+                        mConversationArrayAdapter.add("Receive: " + response);
+                        mConversationArrayAdapter.notifyDataSetChanged();
+                        Log.d(TAG, "Receive: " + response);
+                    }
+
+                    @Override
+                    public void onResponse(int code) {
+                        if(code == REQUEST_SUCCESS){
+                            Log.d(TAG, "Open Notify Sucessfully");
+                            // 打开notify成功后发送数据
+                            sendMessage(bluetoothMAC, bluetoothService, "AT");
+                        }
+                    }
+                });
+    }
 
     // 禁止对串口的按键操作
     private void closeChatButton(){
         mDataCollectBtn.setEnabled(false);
         mWindowClearBtn.setEnabled(false);
         mDataSaveBtn.setEnabled(false);
+    }
+    private void closeChatNotify(){
+        mBluetoothClient.unnotify(bluetoothMAC, bluetoothService.getUUID(),
+                bluetoothService.getCharacters().get(0).getUuid(), new BleUnnotifyResponse() {
+                    @Override
+                    public void onResponse(int code) {
+                        if(code == REQUEST_SUCCESS){
+                            // 关闭notify
+                            Log.d(TAG, "Close Notify Sucessfully");
+                        }
+                    }
+                });
     }
 
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -294,15 +340,13 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                     mBluetoothClient.connect(address, new BleConnectResponse() {  // 连接蓝牙
                         @Override
                         public void onResponse(int code, BleGattProfile data) {
-                            if(code == REQUEST_SUCCESS){
+                            if(code == REQUEST_SUCCESS){   // 连接成功
                                 Log.d(TAG, "Connect Sucessfully");
                                 // 添加蓝牙连接状态监听
                                 mBluetoothClient.registerConnectStatusListener(address, mBleConnectStatusListener);
                                 bluetoothMAC = address;  // 保存已成功连接的地址
                                 List<BleGattService> services = data.getServices();
                                 bluetoothService = services.get(2);
-                                //sendMessage(bluetoothMAC, bluetoothService, "AT");
-                                readMessage(bluetoothMAC, bluetoothService);
                                 setupChatButton();         // 开启按键区域功能
                             }else{
                                 Log.d(TAG, String.valueOf(code));
@@ -338,6 +382,5 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
             }
         }
     };
-
 
 }
