@@ -1,0 +1,30 @@
+<resources>
+    <string name="app_name">BlueToothSerialPort</string>
+    <string name="copyright_message">东南大学自动化学院</string>
+    <string name="more_description">BlueToothSerialPort More</string>
+    <string name="toolbar_title">BlueToothSerialPort</string>
+    <string name="data_collect_start">开始采集</string>
+    <string name="data_collect_end">结束采集</string>
+    <string name="window_clear">清空窗口</string>
+    <string name="data_save">保存数据</string>
+    <string name="app_about">About</string>
+
+    <string name="not_connected">你没有连接一个设备</string>
+    <string name="bt_not_enabled_leaving">蓝牙没有打开</string>
+    <string name="title_connecting">连接中...</string>
+    <string name="title_connected_to">连接到: </string>
+    <string name="title_not_connected">无连接</string>
+
+    <!--  DeviceListActivity -->
+    <string name="scanning">寻找设备...</string>
+    <string name="select_device">选择一个设备去连接</string>
+    <string name="none_paired">没有设备被请求</string>
+    <string name="none_found">没有发现设备</string>
+    <string name="title_paired_devices">可以连接的设备</string>
+    <string name="title_other_devices">其他</string>
+    <string name="button_scan">寻找设备</string>
+
+    <!-- Options Menu -->
+    <string name="connect">Scan</string>
+    <string name="discoverable">Invisiable</string>
+</resources>
