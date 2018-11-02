@@ -26,6 +26,11 @@
 
     <!-- Set Labels Activity-->
     <string name="label_number">学号：</string>
+    <string name="label_hungry">饥饿程度：</string>
+    <string name="label_tired">疲劳程度：</string>
+    <string name="label_fear">恐惧程度：</string>
+    <string name="label_health">健康程度：</string>
+    <string name="button_submit">提交标签</string>
 
     <!-- Options Menu -->
     <string name="connect">Scan</string>

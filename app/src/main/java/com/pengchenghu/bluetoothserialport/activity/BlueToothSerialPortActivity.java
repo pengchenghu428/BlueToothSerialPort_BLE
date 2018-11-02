@@ -36,6 +36,7 @@ import com.inuker.bluetooth.library.model.BleGattService;
 import com.inuker.bluetooth.library.receiver.listener.BluetoothBondListener;
 import com.pengchenghu.bluetoothserialport.R;
 import com.pengchenghu.bluetoothserialport.conffiguration.StaticConfiguration;
+import com.pengchenghu.bluetoothserialport.domain.Label;
 import com.pengchenghu.bluetoothserialport.tools.HexAndByte;
 
 import java.io.UnsupportedEncodingException;
@@ -70,6 +71,7 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
     private static final boolean D = true;
     private static final int REQUEST_CONNECT_DEVICE = 1;
     private static final int REQUEST_ENABLE_BT = 2;
+    private static final int REQUEST_SET_LABEL = 3;
 
     // mConversationView ListView相关变量
     private String mConnectedDeviceName = null;
@@ -145,8 +147,12 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                 mConversationArrayAdapter.notifyDataSetChanged();
                 break;
             case R.id.button_data_save:     // 数据保存消息监听
+                if(mDataCollectBtn.getText().toString().equals(R.string.data_collect_end)){
+                    Toast.makeText(BlueToothSerialPortActivity.this, "请先停止当前采集", Toast.LENGTH_SHORT).show();
+                    break;
+                }
                 Intent intent = new Intent(BlueToothSerialPortActivity.this, SetLabelsActivity.class);
-                startActivity(intent);
+                startActivityForResult(intent, REQUEST_SET_LABEL);
                 break;
         }
     }
@@ -215,20 +221,20 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
     @Override
     public void onPause() {
         super.onPause();
-
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        mBluetoothClient.disconnect(bluetoothMAC);
-        mBluetoothClient.unregisterConnectStatusListener(bluetoothMAC, mBleConnectStatusListener);
+//        mBluetoothClient.disconnect(bluetoothMAC);
+//        mBluetoothClient.unregisterConnectStatusListener(bluetoothMAC, mBleConnectStatusListener);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         mBluetoothClient.disconnect(bluetoothMAC);
+        mBluetoothClient.unregisterConnectStatusListener(bluetoothMAC, mBleConnectStatusListener);
     }
 
     // 确保本蓝牙可以被发现
@@ -350,6 +356,9 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                         public void onResponse(int code, BleGattProfile data) {
                             if(code == REQUEST_SUCCESS){   // 连接成功
                                 Log.d(TAG, "Connect Sucessfully");
+                                // 断开上一次的连接
+                                mBluetoothClient.disconnect(bluetoothMAC);
+                                mBluetoothClient.unregisterConnectStatusListener(bluetoothMAC, mBleConnectStatusListener);
                                 // 添加蓝牙连接状态监听
                                 mBluetoothClient.registerConnectStatusListener(address, mBleConnectStatusListener);
                                 bluetoothMAC = address;  // 保存已成功连接的地址
@@ -374,6 +383,14 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                             Toast.LENGTH_SHORT).show();
                     finish();
                 }
+            case REQUEST_SET_LABEL:
+                if(resultCode == Activity.RESULT_OK) {
+                    Label label = (Label) data.getParcelableExtra(SetLabelsActivity.EXTRA_LABEL);
+//                    Log.d(TAG, label.getNumber() + label.getHungry_label() + label.getTired_label()
+//                            + label.getFear_label() + label.getHealth_label());
+                    writeDataToDisk(label);
+                }
+                break;
         }
     }
 
@@ -390,5 +407,14 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
             }
         }
     };
+
+    // 将蓝牙获得的数据写入文件
+    public void writeDataToDisk(Label label){
+        Log.d(TAG, "writeDataToDisk");
+        Log.d(TAG, "Label: "+ label.getNumber() + label.getHungry_label() + label.getTired_label()
+                + label.getFear_label() + label.getHealth_label());
+        
+    }
+
 
 }

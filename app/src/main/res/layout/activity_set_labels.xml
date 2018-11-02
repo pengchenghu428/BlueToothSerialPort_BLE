@@ -17,27 +17,118 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
+    <!-- 学号栏 -->
     <LinearLayout
         android:id="@+id/linear_number"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_alignParentTop="true">
+        android:layout_alignParentTop="true"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp">
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/label_number"/>
         <EditText
+            android:id="@+id/editview_number"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"/>
+    </LinearLayout>
 
+    <!-- 饥饿指标栏 -->
+    <LinearLayout
+        android:id="@+id/linear_hungry"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_below="@+id/linear_number"
+        android:layout_marginTop="10dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_hungry"/>
+        <Spinner
+            android:id="@+id/spiner_hungry"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:entries="@array/array_hungry"/>
+    </LinearLayout>
+
+    <!-- 疲劳程度 -->
+    <LinearLayout
+        android:id="@+id/linear_tired"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_below="@+id/linear_hungry"
+        android:layout_marginTop="10dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_tired"/>
+        <Spinner
+            android:id="@+id/spiner_tired"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:entries="@array/array_tired"/>
+    </LinearLayout>
+
+    <!-- 恐惧程度 -->
+    <LinearLayout
+        android:id="@+id/linear_fear"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_below="@+id/linear_tired"
+        android:layout_marginTop="10dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_fear"/>
+        <Spinner
+            android:id="@+id/spiner_fear"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:entries="@array/array_fear" />
+    </LinearLayout>
+
+    <!-- 健康程度 -->
+    <LinearLayout
+        android:id="@+id/linear_health"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_below="@+id/linear_fear"
+        android:layout_marginTop="10dp"
+        android:paddingLeft="10dp"
+        android:paddingRight="10dp">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/label_health"/>
+        <Spinner
+            android:id="@+id/spiner_health"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:entries="@array/array_health" />
     </LinearLayout>
 
     <Button
-        android:id="@+id/button_scan"
+        android:id="@+id/button_submit"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
-        android:text="@string/button_scan" />
+        android:text="@string/button_submit" />
 </RelativeLayout>

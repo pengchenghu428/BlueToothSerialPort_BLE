@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="array_hungry">
+        <item>0-空腹8小时</item>
+        <item>1-饭后1小时内</item>
+        <item>2-饭后1-2小时</item>
+        <item>3-饭后2-3小时</item>
+        <item>4-饭后3-4小时</item>
+        <item>5-饭后4小时外</item>
+    </string-array>
+    <string-array name="array_tired">
+        <item>0-无疲劳感</item>
+        <item>1-稍有疲劳感</item>
+        <item>2-有疲劳感</item>
+    </string-array>
+    <string-array name="array_fear">
+        <item>0-无恐惧感</item>
+        <item>1-有恐惧感</item>
+        <item>2-极度恐惧</item>
+    </string-array>
+    <string-array name="array_health">
+        <item>0-正常状态</item>
+        <item>1-异常状态</item>
+    </string-array>
+</resources>
