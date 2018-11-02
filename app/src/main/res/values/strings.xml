@@ -24,6 +24,9 @@
     <string name="title_other_devices">其他</string>
     <string name="button_scan">寻找设备</string>
 
+    <!-- Set Labels Activity-->
+    <string name="label_number">学号：</string>
+
     <!-- Options Menu -->
     <string name="connect">Scan</string>
     <string name="discoverable">Invisiable</string>

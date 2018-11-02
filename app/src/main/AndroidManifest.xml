@@ -35,7 +35,8 @@
             </intent-filter>
         </activity>
         <activity android:name=".activity.BlueToothSerialPortActivity" />
-        <activity android:name=".activity.DeviceListActivity"></activity>
+        <activity android:name=".activity.DeviceListActivity" />
+        <activity android:name=".activity.SetLabelsActivity"></activity>
     </application>
 
 </manifest>

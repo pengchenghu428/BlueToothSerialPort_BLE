@@ -29,4 +29,20 @@
         <item name="overlapAnchor">false</item>
     </style>
 
+    <!--activity_set_labels style-->
+    <!--linearlayout-->
+    <style name="SetLabels_LinearLayout">
+        <item name="layout_width">match_parent</item>
+        <item name="layout_height">wrap_content</item>
+    </style>
+    <style name="SetLabels_LinearLayout_TextView">
+        <item name="layout_width">wrap_content</item>
+        <item name="layout_height">wrap_content</item>
+    </style>
+    <style name="SetLabels_LinearLayout_Edit">
+        <item name="layout_width">0dp</item>
+        <item name="layout_height">wrap_content</item>
+        <item name="layout_weight">1</item>
+    </style>
+
 </resources>

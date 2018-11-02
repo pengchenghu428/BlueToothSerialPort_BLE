@@ -3,7 +3,7 @@ package com.pengchenghu.bluetoothserialport.tools;
 /**
  * Created by pengchenghu on 2018/11/2.
  * Author Email: 15651851181@163.com
- * Describe:
+ * Describe: byte 和 hex 相互转换
  */
 public class HexAndByte {
 

@@ -129,10 +129,15 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                 mOverflowMenu.show(); // 打开下拉菜单
                 break;
             case R.id.button_data_collect:  // 数据采集开始/结束消息监听
-                if(mDataCollectBtn.getText().toString().equals(R.string.data_collect_start)){
+                //Log.d(TAG, "mDataCollectBtn listener" );
+                if(mDataCollectBtn.getText().toString().equals(getResources().getString(R.string.data_collect_start))){
+                    //Log.d(TAG, "mDataCollectBtn listener: " +  getResources().getString(R.string.data_collect_start));
                     setupChatNotify();  // 打开notify，采集数据
-                }else if(mDataCollectBtn.getText().toString().equals(R.string.data_collect_end)){
+                    mDataCollectBtn.setText(getResources().getString(R.string.data_collect_end));
+                }else if(mDataCollectBtn.getText().toString().equals(getResources().getString(R.string.data_collect_end))){
+                    //Log.d(TAG, "mDataCollectBtn listener: " +  getResources().getString(R.string.data_collect_end));
                     closeChatNotify();  // 关闭notify，停止采集数据
+                    mDataCollectBtn.setText(getResources().getString(R.string.data_collect_start));
                 }
                 break;
             case R.id.button_window_clear:  // 清空窗口消息监听
@@ -140,6 +145,8 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                 mConversationArrayAdapter.notifyDataSetChanged();
                 break;
             case R.id.button_data_save:     // 数据保存消息监听
+                Intent intent = new Intent(BlueToothSerialPortActivity.this, SetLabelsActivity.class);
+                startActivity(intent);
                 break;
         }
     }
@@ -245,7 +252,7 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
             @Override
             public void onResponse(int code) {
                 if (code == REQUEST_SUCCESS) {
-                    Log.i(TAG, "指令AT发送成功");
+                    // Log.i(TAG, "指令发送成功");
                     mConversationArrayAdapter.add("Send: "+ message);
                     mConversationArrayAdapter.notifyDataSetChanged();
                 }
@@ -280,6 +287,7 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
         mDataSaveBtn.setEnabled(true);
     }
     private void setupChatNotify(){
+        Log.d(TAG, "Setup Chat Notify" );
         mBluetoothClient.notify(bluetoothMAC, bluetoothService.getUUID(),
                 bluetoothService.getCharacters().get(0).getUuid(), new BleNotifyResponse() {
                     @Override
