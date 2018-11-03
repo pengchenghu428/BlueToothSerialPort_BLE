@@ -1,13 +1,20 @@
 package com.pengchenghu.bluetoothserialport.activity;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -39,7 +46,15 @@ import com.pengchenghu.bluetoothserialport.conffiguration.StaticConfiguration;
 import com.pengchenghu.bluetoothserialport.domain.Label;
 import com.pengchenghu.bluetoothserialport.tools.HexAndByte;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -73,6 +88,9 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
     private static final int REQUEST_ENABLE_BT = 2;
     private static final int REQUEST_SET_LABEL = 3;
 
+    // 权限
+    private static final int REQUEST_EXTERNAL_STORAGE_WRITE_PERMISSON = 1;
+
     // mConversationView ListView相关变量
     private String mConnectedDeviceName = null;
     private ArrayAdapter<String> mConversationArrayAdapter;  // ListView 内容
@@ -82,6 +100,8 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
     public static BluetoothClient mBluetoothClient;
     private String bluetoothMAC;
     private BleGattService bluetoothService;
+
+    Label mLabel = new Label();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -147,7 +167,7 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                 mConversationArrayAdapter.notifyDataSetChanged();
                 break;
             case R.id.button_data_save:     // 数据保存消息监听
-                if(mDataCollectBtn.getText().toString().equals(R.string.data_collect_end)){
+                if(mDataCollectBtn.getText().toString().equals(getResources().getString(R.string.data_collect_end))){
                     Toast.makeText(BlueToothSerialPortActivity.this, "请先停止当前采集", Toast.LENGTH_SHORT).show();
                     break;
                 }
@@ -386,9 +406,8 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
             case REQUEST_SET_LABEL:
                 if(resultCode == Activity.RESULT_OK) {
                     Label label = (Label) data.getParcelableExtra(SetLabelsActivity.EXTRA_LABEL);
-//                    Log.d(TAG, label.getNumber() + label.getHungry_label() + label.getTired_label()
-//                            + label.getFear_label() + label.getHealth_label());
-                    writeDataToDisk(label);
+                    mLabel = label;
+                    writeDataToDisk(mLabel);
                 }
                 break;
         }
@@ -410,11 +429,96 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
 
     // 将蓝牙获得的数据写入文件
     public void writeDataToDisk(Label label){
-        Log.d(TAG, "writeDataToDisk");
-        Log.d(TAG, "Label: "+ label.getNumber() + label.getHungry_label() + label.getTired_label()
-                + label.getFear_label() + label.getHealth_label());
-        
+//        Log.d(TAG, "writeDataToDisk");
+//        Log.d(TAG, "Label: "+ label.getNumber() + label.getHungry_label() + label.getTired_label()
+//                + label.getFear_label() + label.getHealth_label());
+//        Log.d(TAG, Environment.getExternalStoragePublicDirectory("").toString());
+        //使用兼容库就无需判断系统版本
+        int hasWriteStoragePermission = ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
+        if (hasWriteStoragePermission == PackageManager.PERMISSION_GRANTED) {
+            // 拥有权限，执行操作
+            writeDataToFile(label);
+        }else{
+            // 没有权限，向用户请求权限
+            ActivityCompat.requestPermissions(BlueToothSerialPortActivity.this,
+                    new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_EXTERNAL_STORAGE_WRITE_PERMISSON);
+        }
     }
 
+    // 申请权限
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        //通过requestCode来识别是否同一个请求
+        if (requestCode == REQUEST_EXTERNAL_STORAGE_WRITE_PERMISSON){
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED){
+                //用户同意，执行操作
+                writeDataToFile(mLabel);
+            }else{
+                //用户不同意，向用户展示该权限作用
+//                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
+//                    Toast.makeText(BlueToothSerialPortActivity.this, "写入文件失败，用户未开放读写权限", Toast.LENGTH_SHORT).show();
+//                }
+                Toast.makeText(BlueToothSerialPortActivity.this,
+                        "写入文件失败，用户未开放读写权限", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
 
+    // 写文件操作
+    public void writeDataToFile(Label label){
+        String rootDir = Environment.getExternalStoragePublicDirectory("").toString() + "/ATemp";
+        File directory = new File(rootDir);
+        if(!directory.exists()){    // 文件夹不存在，创建文件夹
+            directory.mkdir();
+        }
+        long l = System.currentTimeMillis(); //得到long类型当前时间
+        Date date = new Date(l); //new日期对象
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
+        String filename = dateFormat.format(date) + ".txt";
+        File file = new File(rootDir, filename); // 实例化文件对象
+        try {
+            if(file.exists()){   // 如果文件存在
+                file.delete();   // 删除文件
+            }
+            file.createNewFile(); // 创建新的文件
+            FileOutputStream fos=new FileOutputStream(file);
+            OutputStreamWriter osw=new OutputStreamWriter(fos);
+            // 测试者标签
+            osw.write("Number: "+ label.getNumber() + System.lineSeparator());
+            osw.write("Hungry: "+ label.getHungry_label() + System.lineSeparator());
+            osw.write("Tired: "+ label.getTired_label() + System.lineSeparator());
+            osw.write("Fear: "+ label.getFear_label() + System.lineSeparator());
+            osw.write("Health: "+ label.getHealth_label() + System.lineSeparator());
+            // 数据信息
+            for(int i = 0; i < mConversationArrayAdapter.getCount(); i++){
+                osw.write(mConversationArrayAdapter.getItem(i) + System.lineSeparator());
+            }
+            osw.flush();
+            osw.close();
+            fos.close();
+            Toast.makeText(BlueToothSerialPortActivity.this,
+                    "数据成功保存:"+rootDir+"/"+filename, Toast.LENGTH_SHORT).show();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+//        try {
+//            FileWriter filewriter = new FileWriter(rootDir + filename, true);
+//            BufferedWriter bufferedwriter = new BufferedWriter(filewriter);
+//            bufferedwriter.append("在已有的基础上添加字符串");
+//            // 测试者标签
+//            bufferedwriter.write("Number: "+ label.getNumber() + System.lineSeparator());
+//            bufferedwriter.write("Hungry: "+ label.getHungry_label() + System.lineSeparator());
+//            bufferedwriter.write("Tired: "+ label.getTired_label() + System.lineSeparator());
+//            bufferedwriter.write("Fear: "+ label.getFear_label() + System.lineSeparator());
+//            bufferedwriter.write("Health: "+ label.getHealth_label() + System.lineSeparator());
+//            // 数据信息
+//            for(int i = 0; i < mConversationArrayAdapter.getCount(); i++){
+//                bufferedwriter.write(mConversationArrayAdapter.getItem(i) + System.lineSeparator());
+//            }
+//            bufferedwriter.close();
+//            filewriter.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
+    }
 }

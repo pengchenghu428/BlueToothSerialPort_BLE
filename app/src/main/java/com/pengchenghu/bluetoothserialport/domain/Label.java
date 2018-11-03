@@ -18,6 +18,8 @@ public class Label implements Parcelable {
     /*
      * 构造函数
      */
+    public Label(){
+    }
     public Label(String number, int hungry_label, int tired_label, int fear_label,
                  int health_label){
         this.number = number;

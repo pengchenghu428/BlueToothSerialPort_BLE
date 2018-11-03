@@ -35,4 +35,7 @@
     <!-- Options Menu -->
     <string name="connect">Scan</string>
     <string name="discoverable">Invisiable</string>
+
+    <!-- permission -->
+    <string name="storage_permissions_remind">读写内部存储</string>
 </resources>
