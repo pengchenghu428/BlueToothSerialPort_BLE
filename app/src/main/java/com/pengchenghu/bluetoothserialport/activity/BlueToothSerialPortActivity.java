@@ -92,7 +92,6 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
     private static final int REQUEST_EXTERNAL_STORAGE_WRITE_PERMISSON = 1;
 
     // mConversationView ListView相关变量
-    private String mConnectedDeviceName = null;
     private ArrayAdapter<String> mConversationArrayAdapter;  // ListView 内容
     private BluetoothAdapter mBluetoothAdapter = null;  // 蓝牙适配器
 
@@ -102,6 +101,7 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
     private BleGattService bluetoothService;
 
     Label mLabel = new Label();
+    String dataString = new String();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -123,7 +123,7 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
         mToolbarMoreIcon.setOnTouchListener(mOverflowMenu.getDragToOpenListener());
         mToolbarMoreIcon.setOnClickListener(this);  // ToolBarMoreIcon设置监听
         // ListView 初始化
-        mConversationView = (ListView) findViewById(R.id.in);
+        mConversationView = (ListView) findViewById(R.id.old_data);
         mConversationArrayAdapter = new ArrayAdapter<String>(this, R.layout.message);
         mConversationView.setAdapter(mConversationArrayAdapter);
         // Button初始化
@@ -165,6 +165,7 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
             case R.id.button_window_clear:  // 清空窗口消息监听
                 mConversationArrayAdapter.clear();
                 mConversationArrayAdapter.notifyDataSetChanged();
+                dataString="";
                 break;
             case R.id.button_data_save:     // 数据保存消息监听
                 if(mDataCollectBtn.getText().toString().equals(getResources().getString(R.string.data_collect_end))){
@@ -319,10 +320,8 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                     @Override
                     public void onNotify(UUID service, UUID character, byte[] value) {
                         //硬件回复的数据在这里,统一处理
-                        String response = HexAndByte.bytesToHex(value);
-                        mConversationArrayAdapter.add("Receive: " + response);
-                        mConversationArrayAdapter.notifyDataSetChanged();
-                        Log.d(TAG, "Receive: " + response);
+                        String response = HexAndByte.bytesToCharArray(value);
+                        processAndDisplayData(response);
                     }
 
                     @Override
@@ -330,7 +329,7 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                         if(code == REQUEST_SUCCESS){
                             Log.d(TAG, "Open Notify Sucessfully");
                             // 打开notify成功后发送数据
-                            sendMessage(bluetoothMAC, bluetoothService, "AT");
+                            // sendMessage(bluetoothMAC, bluetoothService, "AT");
                         }
                     }
                 });
@@ -426,6 +425,28 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
             }
         }
     };
+
+    // 蓝牙数据处理及显示
+    public void processAndDisplayData(String response){
+        char stx = 2;  // STX
+        char etx = 3;  // ETX
+        if(dataString.isEmpty()){
+            int stxLocation = response.indexOf(stx);
+            dataString = dataString.concat(response.substring(stxLocation));
+        }else{
+            dataString = dataString.concat(response);
+        }
+        int stxLocation = dataString.indexOf(stx);
+        int etxLocation = dataString.indexOf(etx);
+        if(stxLocation != -1 && etxLocation != -1) {
+            String receiveData = dataString.substring(stxLocation, (etxLocation+1));
+            dataString = dataString.replaceFirst(receiveData, "");
+            mConversationArrayAdapter.add("Receive: " + receiveData.substring(1, receiveData.length()-1));
+            mConversationArrayAdapter.notifyDataSetChanged();
+        }
+
+
+    }
 
     // 将蓝牙获得的数据写入文件
     public void writeDataToDisk(Label label){

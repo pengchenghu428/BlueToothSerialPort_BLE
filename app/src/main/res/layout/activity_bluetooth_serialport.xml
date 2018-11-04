@@ -52,12 +52,21 @@
         android:layout_height="match_parent"
         android:layout_below="@+id/toolbar"
         android:layout_above="@+id/buttonPanel"
-        android:orientation="vertical">
+        android:orientation="horizontal">
 
         <ListView
-            android:id="@+id/in"
-            android:layout_width="match_parent"
+            android:id="@+id/old_data"
+            android:layout_width="0dp"
             android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:divider="@null"
+            android:stackFromBottom="false"
+            android:transcriptMode="alwaysScroll" />
+        <ListView
+            android:id="@+id/process_data"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
             android:divider="@null"
             android:stackFromBottom="false"
             android:transcriptMode="alwaysScroll" />

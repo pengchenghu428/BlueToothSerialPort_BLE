@@ -71,4 +71,18 @@ public class HexAndByte {
         }
         return result;
     }
+
+    /**
+     * 字节数组转16进制
+     * @param bytes 需要转换的byte数组
+     * @return  转换后的Hex字符串
+     */
+    public static String bytesToCharArray(byte[] bytes) {
+        StringBuffer sb = new StringBuffer();
+        for(int i = 0; i < bytes.length; i++) {
+            char ascii =  (char) (bytes[i] & 0xFF);
+            sb.append(ascii);
+        }
+        return sb.toString();
+    }
 }
