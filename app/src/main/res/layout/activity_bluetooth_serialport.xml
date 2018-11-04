@@ -61,7 +61,8 @@
             android:layout_weight="1"
             android:divider="@null"
             android:stackFromBottom="false"
-            android:transcriptMode="alwaysScroll" />
+            android:transcriptMode="alwaysScroll"
+            android:visibility="gone"/>
         <ListView
             android:id="@+id/process_data"
             android:layout_width="0dp"
