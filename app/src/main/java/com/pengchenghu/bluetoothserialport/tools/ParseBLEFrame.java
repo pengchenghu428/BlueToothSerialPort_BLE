@@ -4,16 +4,12 @@ import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.pengchenghu.bluetoothserialport.activity.BlueToothSerialPortActivity;
 import com.pengchenghu.bluetoothserialport.domain.Label;
 
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -36,12 +32,18 @@ public class ParseBLEFrame {
     public static List<Float> TEM = new ArrayList<>();      //温度数据
     public static List<Float> INFRARED_TEM = new ArrayList<>(); //红外温度
 
+    // 表头变量
+    public static String parseBleDataHeader = String.format("%-7s%-7s%-7s%-10s%-10s%-8s%-8s",
+            "ECG","PPG","GSR","SpO2","Pulse","DS18B20","MLX904");
+
     // 其他变量
     private static int num_PEG = 0;
     private static int num_SP = 0;
 
     // 解析数据
     public static void parseBLEDataFrame(String str){
+        Log.d("ParseBLE", new Date().toString() + " "+ " PEG:" + num_PEG + " SP:" +num_SP);
+        Log.d("ParseBLE", " ECG:" + ECG.size() + " TEM:" + TEM.size() + " SP:" + SpO2.size());
         if (str.length() != DATA_LENGTH){
             return;
         }
@@ -99,6 +101,47 @@ public class ParseBLEFrame {
         return returnStr;
     }
 
+    // 得到当前解析的数据字符串分类后的数据
+    public static List<String> getParseDataFrameAfterClassify(){
+        List<String> listStr = new ArrayList<>();
+
+        int num_Min = Math.min(num_PEG, num_SP);
+        if(num_Min > 0){
+            if(TEM.size() >= 17*(num_Min) && TEM.size() >= 17*(num_Min-1)){
+                Log.d("ParseBLE", "True");
+            }else{
+                Log.d("ParseBLE", "False");
+                return listStr;
+            }
+            for(int i = 0; i < 17; i++){
+                String ecg = String.format("%-7s", ECG.get(17*(num_Min-1)+i).toString());
+                String ppg = String.format("%-7s", PPG.get(17*(num_Min-1)+i).toString());
+                String gsr = String.format("%-7s", GSR.get(17*(num_Min-1)+i).toString());
+                String spo2 = String.format("%-10s", SpO2.get(17*(num_Min-1)+i).toString());
+                String pulse = String.format("%-10s", Pulse.get(17*(num_Min-1)+i).toString());
+                String ds18b20 = String.format("%-8s", TEM.get(17*(num_Min-1)+i).toString());
+                String mlx904 = String.format("%-8s", INFRARED_TEM.get(17*(num_Min-1)+i).toString());
+                listStr.add(ecg+ppg+gsr+spo2+pulse+ds18b20+mlx904);
+            }
+        }
+
+//        int num_Min = getMinLength();
+//        if(num_Min > 0){
+//            for(int i = 0; i < 17; i++){
+//                String ecg = String.format("%-7s", ECG.get(num_Min-17+i).toString());
+//                String ppg = String.format("%-7s", PPG.get(num_Min-17+i).toString());
+//                String gsr = String.format("%-7s", GSR.get(num_Min-17+i).toString());
+//                String spo2 = String.format("%-10s", SpO2.get(num_Min-17+i).toString());
+//                String pulse = String.format("%-10s", Pulse.get(num_Min-17+i).toString());
+//                String ds18b20 = String.format("%-8s", TEM.get(num_Min-17+i).toString());
+//                String mlx904 = String.format("%-8s", INFRARED_TEM.get(num_Min-17+i).toString());
+//                listStr.add(ecg+ppg+gsr+spo2+pulse+ds18b20+mlx904);
+//            }
+//        }
+
+        return listStr;
+    }
+
     //解析DS18B20温度
     public static void getDS18B20Data(String s) {
         StringBuilder builder = new StringBuilder();
@@ -110,18 +153,33 @@ public class ParseBLEFrame {
         builder.append(sub);
         sub = s.substring(DATA_LENGTH - 20, DATA_LENGTH - 18);
         builder.append(sub);
-        int temperature = (Integer.valueOf(builder.toString(), 16) + 1); // 避免除0错误
+        int temperature = Integer.valueOf(builder.toString(), 16);
         float res_integer = temperature / 16;       //
-        try {
-            float res_decimal = (10000 / (temperature & 0xf)) / 100;
+        float res_decimal = 0.0f;
+        int temp_temperature = (temperature & 0xf);
+        if(temp_temperature != 0){  // 避免除0错误
+            res_decimal = (10000 / (temp_temperature)) / 100;
             while (res_decimal >= 1) res_decimal /= 10;
-            for (int i = 0; i < 17; i++){
-                TEM.add(res_integer + res_decimal);
-            }
-        }catch (ArithmeticException e){
-            Log.e("ParseBLE", builder.toString() + "   "+ temperature);
         }
-        //return res_integer + res_decimal;
+        for (int i = 0; i < 17; i++){
+            TEM.add(res_integer + res_decimal);
+        }
+//        try {
+//            int temp_temperature = (temperature & 0xf);
+//            if(temp_temperature != 0){  // 避免除0错误
+//                res_decimal = (10000 / (temp_temperature)) / 100;
+//                while (res_decimal >= 1) res_decimal /= 10;
+//            }
+//            for (int i = 0; i < 17; i++){
+//                TEM.add(res_integer + res_decimal);
+//            }
+//        }catch (ArithmeticException e){
+//            Log.e("ParseBLE", builder.toString() + "   "+ temperature);
+//            for (int i = 0; i < 17; i++){
+//                TEM.add(res_integer);
+//            }
+//        }
+//        return res_integer + res_decimal;
     }
 
     //解析红外温度
@@ -230,12 +288,19 @@ public class ParseBLEFrame {
     public static void writeParseDataToFile(Label label, String filename){
         String rootDir = Environment.getExternalStoragePublicDirectory("").toString() + "/ATemp/Extract_Data";
         File directory = new File(rootDir);
-        if(!directory.exists()){    // 文件夹不存在，创建文件夹
+        if(!directory.exists()){    // // 创建二级目录
             directory.mkdir();
         }
         File extract_out = new File(rootDir, filename); // 实例化文件对象
         try {
             BufferedWriter extract_data_writer = new BufferedWriter(new FileWriter(extract_out));
+            // 写入标签
+            extract_data_writer.write("Number: "+ label.getNumber() + System.lineSeparator());
+            extract_data_writer.write("Hungry: "+ label.getHungry_label() + System.lineSeparator());
+            extract_data_writer.write("Tired: "+ label.getTired_label() + System.lineSeparator());
+            extract_data_writer.write("Fear: "+ label.getFear_label() + System.lineSeparator());
+            extract_data_writer.write("Health: "+ label.getHealth_label() + System.lineSeparator());
+            // 写入特征参数
             String header = String.format("%-12s%-12s%-12s%-12s%-12s%-12s%-12s",
                     "ECG","PPG","GSR","SpO2","Pulse","DS18B20","MLX904");
             extract_data_writer.write(header + System.lineSeparator());
@@ -285,5 +350,23 @@ public class ParseBLEFrame {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    //
+    public static int getMaxLength(){
+        int ecg = ECG.size();
+        int ppg = PPG.size();
+        int gsr = GSR.size();
+        int spo2 = SpO2.size();
+        int pulse = Pulse.size();
+        int ds18b20 = TEM.size();
+        int mlx904 = INFRARED_TEM.size();
+        int max = Math.max(ecg, ppg);
+        max = Math.max(max, gsr);
+        max = Math.max(max, spo2);
+        max = Math.max(max, pulse);
+        max = Math.max(max, ds18b20);
+        max = Math.max(max, mlx904);
+        return max;
     }
 }

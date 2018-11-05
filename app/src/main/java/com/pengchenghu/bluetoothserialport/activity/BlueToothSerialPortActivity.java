@@ -55,6 +55,7 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -77,7 +78,8 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
     private PopupMenu mOverflowMenu;
     private ImageView mToolbarMoreIcon;
 
-    private ListView mConversationView;
+//    private ListView mConversationView;
+    private TextView mParseBleDataTv;
     private ListView mParseBleDataView;
     private Button mDataCollectBtn;
     private Button mWindowClearBtn;
@@ -94,7 +96,8 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
     private static final int REQUEST_EXTERNAL_STORAGE_WRITE_PERMISSON = 1;
 
     // mConversationView ListView相关变量
-    private ArrayAdapter<String> mConversationArrayAdapter;  // ListView 内容
+    //private ArrayAdapter<String> mConversationArrayAdapter;  // ListView 内容
+    private List<String> mConversationArray = new ArrayList<>();  // 原始数据保存
     // mParseBleDataView ListView相关变量
     private ArrayAdapter<String> mParseBleDataArrayAdapter;
 
@@ -145,9 +148,11 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
         mToolbarMoreIcon.setOnTouchListener(mOverflowMenu.getDragToOpenListener());
         mToolbarMoreIcon.setOnClickListener(this);  // ToolBarMoreIcon设置监听
         // ListView 初始化
-        mConversationView = (ListView) findViewById(R.id.old_data);  // 获取控件资源
-        mConversationArrayAdapter = new ArrayAdapter<String>(this, R.layout.message); // 初始化适配器
-        mConversationView.setAdapter(mConversationArrayAdapter); // 装载适配器
+        mParseBleDataTv = (TextView) findViewById(R.id.data_header);
+        mParseBleDataTv.setText(ParseBLEFrame.parseBleDataHeader);
+//        mConversationView = (ListView) findViewById(R.id.old_data);  // 获取控件资源
+//        mConversationArrayAdapter = new ArrayAdapter<String>(this, R.layout.message); // 初始化适配器
+//        mConversationView.setAdapter(mConversationArrayAdapter); // 装载适配器
         mParseBleDataView = (ListView) findViewById(R.id.process_data);
         mParseBleDataArrayAdapter = new ArrayAdapter<String>(this, R.layout.message);
         mParseBleDataView.setAdapter(mParseBleDataArrayAdapter);  // 装载适配器
@@ -188,12 +193,18 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                 }
                 break;
             case R.id.button_window_clear:  // 清空窗口消息监听
-                mConversationArrayAdapter.clear();
-                mConversationArrayAdapter.notifyDataSetChanged();
-                mParseBleDataArrayAdapter.clear();
-                mParseBleDataArrayAdapter.notifyDataSetChanged();
-                dataString="";
-                ParseBLEFrame.clearData();
+                if(mDataCollectBtn.getText().toString().equals(getResources().
+                        getString(R.string.data_collect_start))) { // 当前采集结束，清空所有的变量
+                    mConversationArray.clear();
+                    mParseBleDataArrayAdapter.clear();
+                    mParseBleDataArrayAdapter.notifyDataSetChanged();
+                    dataString = "";
+                    ParseBLEFrame.clearData();
+                }else if(mDataCollectBtn.getText().toString().equals(getResources().
+                        getString(R.string.data_collect_end))){  // 当前正在采集，仅清空显示部分变量
+                    mParseBleDataArrayAdapter.clear();
+                    mParseBleDataArrayAdapter.notifyDataSetChanged();
+                }
                 break;
             case R.id.button_data_save:     // 数据保存消息监听
                 if(mDataCollectBtn.getText().toString().equals(getResources().getString(R.string.data_collect_end))){
@@ -275,8 +286,6 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
     @Override
     public void onStop() {
         super.onStop();
-//        mBluetoothClient.disconnect(bluetoothMAC);
-//        mBluetoothClient.unregisterConnectStatusListener(bluetoothMAC, mBleConnectStatusListener);
     }
 
     @Override
@@ -308,8 +317,8 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
             public void onResponse(int code) {
                 if (code == REQUEST_SUCCESS) {
                     // Log.i(TAG, "指令发送成功");
-                    mConversationArrayAdapter.add("Send: "+ message);
-                    mConversationArrayAdapter.notifyDataSetChanged();
+//                    mConversationArrayAdapter.add("Send: "+ message);
+//                    mConversationArrayAdapter.notifyDataSetChanged();
                 }
             }
         });
@@ -328,8 +337,8 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                         e.printStackTrace();
                     }
                     Log.i(TAG, "串口收到消息：" + response);
-                    mConversationArrayAdapter.add("Received: "+ response);
-                    mConversationArrayAdapter.notifyDataSetChanged();
+//                    mConversationArrayAdapter.add("Received: "+ response);
+//                    mConversationArrayAdapter.notifyDataSetChanged();
                 }
             }
         });
@@ -470,45 +479,40 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
         }
         int stxLocation = dataString.indexOf(stx);
         int etxLocation = dataString.indexOf(etx);
-        if(stxLocation != -1 && etxLocation != -1 && (etxLocation-stxLocation)==225) {
+        //Log.d("ParseBLE", "stxLocation: "+ stxLocation +  " etxLocation:"+ etxLocation);
+        if(stxLocation != -1 && etxLocation != -1 ) {
             String receiveData = dataString.substring(stxLocation, (etxLocation+1));
             dataString = dataString.replaceFirst(receiveData, "");
-            String bleFrameStr = receiveData.substring(1,
-                    receiveData.length()-1);  // 蓝牙数据帧
-            mConversationArrayAdapter.add(bleFrameStr); // 添加至old data listview
-            //mConversationArrayAdapter.notifyDataSetChanged();  // 通知更新
-            getSensorDataAndDisplay(bleFrameStr);  // 解析数据帧并显示
+            if((etxLocation-stxLocation)==225) {  // 当且仅当长度为225时，处理数据
+                String bleFrameStr = receiveData.substring(1,
+                        receiveData.length() - 1);  // 蓝牙数据帧
+                mConversationArray.add(bleFrameStr);
+                getSensorDataAndDisplay(bleFrameStr);  // 解析数据帧并显示
+            }
         }
     }
     // 获取传感器的数据并显示
     public void getSensorDataAndDisplay(String data){
-
+        //Log.d("ParseBLE", "getSensorDataAndDisplay: " + data);
         ParseBLEFrame.parseBLEDataFrame(data);   // 解析数据
-        String parseStr = ParseBLEFrame.getParseDataFrame(data);
-        if(!parseStr.isEmpty()) {
+        // String parseStr = ParseBLEFrame.getParseDataFrame(data);
+        List<String> parseArray = ParseBLEFrame.getParseDataFrameAfterClassify();
+        if(!parseArray.isEmpty()) {
             count++;        // 每十次显示一次结果
-            if(count % 10 == 0) {
-                mParseBleDataArrayAdapter.add(ParseBLEFrame.getParseDataFrame(data));
+            if(count % 15 == 0) {
+                mParseBleDataArrayAdapter.addAll(ParseBLEFrame.getParseDataFrameAfterClassify());
                 mParseBleDataArrayAdapter.notifyDataSetChanged();
                 count = 0;
             }
-            if(mParseBleDataArrayAdapter.getCount()>=20){ //清理窗口
-                String arg1 = mParseBleDataArrayAdapter.getItem(mParseBleDataArrayAdapter.getCount()-2);
-                String arg2 = mParseBleDataArrayAdapter.getItem(mParseBleDataArrayAdapter.getCount()-1);
-                mParseBleDataArrayAdapter.clear();
-                mParseBleDataArrayAdapter.add(arg1);
-                mParseBleDataArrayAdapter.add(arg2);
-                mParseBleDataArrayAdapter.notifyDataSetChanged();
-            }
+//            if(mParseBleDataArrayAdapter.getCount() >= 15*17){
+//                mParseBleDataArrayAdapter.clear();
+//                mParseBleDataArrayAdapter.notifyDataSetChanged();
+//            }
         }
     }
 
     // 将蓝牙获得的数据写入文件
     public void writeDataToDisk(Label label){
-//        Log.d(TAG, "writeDataToDisk");
-//        Log.d(TAG, "Label: "+ label.getNumber() + label.getHungry_label() + label.getTired_label()
-//                + label.getFear_label() + label.getHealth_label());
-//        Log.d(TAG, Environment.getExternalStoragePublicDirectory("").toString());
         //使用兼容库就无需判断系统版本
         int hasWriteStoragePermission = ContextCompat.checkSelfPermission(getApplication(), Manifest.permission.WRITE_EXTERNAL_STORAGE);
         if (hasWriteStoragePermission == PackageManager.PERMISSION_GRANTED) {
@@ -531,9 +535,6 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
                 writeDataToFile(mLabel);
             }else{
                 //用户不同意，向用户展示该权限作用
-//                if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-//                    Toast.makeText(BlueToothSerialPortActivity.this, "写入文件失败，用户未开放读写权限", Toast.LENGTH_SHORT).show();
-//                }
                 Toast.makeText(BlueToothSerialPortActivity.this,
                         "写入文件失败，用户未开放读写权限", Toast.LENGTH_SHORT).show();
             }
@@ -542,14 +543,19 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
 
     // 数据保存到文件
     public void writeDataToFile(Label label){
+        String rootDir_level1 = Environment.getExternalStoragePublicDirectory("").toString() + "/ATemp";
+        File directory_level1 = new File(rootDir_level1);
+        if(!directory_level1.exists()){    // 创建一级目录
+            directory_level1.mkdir();
+        }
         String rootDir = Environment.getExternalStoragePublicDirectory("").toString() + "/ATemp/Bef_Data";
         File directory = new File(rootDir);
-        if(!directory.exists()){    // 文件夹不存在，创建文件夹
+        if(!directory.exists()){    // 创建二级目录
             directory.mkdir();
         }
         long l = System.currentTimeMillis(); //得到long类型当前时间
         Date date = new Date(l); //new日期对象
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy_MM_dd_HH_mm_ss");
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss");
         String filename = dateFormat.format(date) + ".txt";
         File file = new File(rootDir, filename); // 实例化文件对象
         try {
@@ -565,9 +571,8 @@ public class BlueToothSerialPortActivity extends AppCompatActivity implements Vi
             osw.write("Tired: "+ label.getTired_label() + System.lineSeparator());
             osw.write("Fear: "+ label.getFear_label() + System.lineSeparator());
             osw.write("Health: "+ label.getHealth_label() + System.lineSeparator());
-            // 数据信息
-            for(int i = 0; i < mConversationArrayAdapter.getCount(); i++){
-                osw.write(mConversationArrayAdapter.getItem(i) + System.lineSeparator());
+            for(int i = 0; i < mConversationArray.size(); i++){
+                osw.write(mConversationArray.get(i) + System.lineSeparator());
             }
             osw.flush();
             osw.close();

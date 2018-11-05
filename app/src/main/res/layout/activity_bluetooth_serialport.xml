@@ -52,11 +52,16 @@
         android:layout_height="match_parent"
         android:layout_below="@+id/toolbar"
         android:layout_above="@+id/buttonPanel"
-        android:orientation="horizontal">
+        android:orientation="vertical">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/data_header" />
 
         <ListView
             android:id="@+id/old_data"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:divider="@null"
@@ -65,7 +70,7 @@
             android:visibility="gone"/>
         <ListView
             android:id="@+id/process_data"
-            android:layout_width="0dp"
+            android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:divider="@null"
