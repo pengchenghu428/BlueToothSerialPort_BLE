@@ -193,12 +193,17 @@ public class ParseBLEFrame {
         builder.append(sub);
         sub = s.substring(DATA_LENGTH - 12, DATA_LENGTH - 10);
         builder.append(sub);
-        int temperature = Integer.valueOf(builder.toString(), 16);
-        float res_integer = temperature / 100.0f;
-        for (int i = 0; i < 17; i++){
+        int temperature = 0;
+        float res_integer = 0.0f;
+        try {
+            temperature = Integer.valueOf(builder.toString(), 16);
+            res_integer = temperature / 100.0f;
+        }catch (NumberFormatException e){
+            Log.d("ParseBLE", e.getMessage());
+        }
+        for (int i = 0; i < 17; i++) {
             INFRARED_TEM.add(res_integer);
         }
-        //return res_integer;
     }
 
     //解析心电ECG数据
